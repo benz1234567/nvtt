@@ -1,33 +1,34 @@
 local nvtt = {}
 
-vim.cmd('normal! gg0')
-vim.api.nvim_command('startinsert')
-vim.cmd('setlocal buftype=nofile') -- Set buffer type to nofile to avoid saving changes
+function nvtt:play()
+  vim.cmd('normal! gg0')
+  vim.api.nvim_command('startinsert')
+  vim.cmd('setlocal buftype=nofile') -- Set buffer type to nofile to avoid saving changes
 
-local startTime = os.time()
-local buf = vim.api.nvim_get_current_buf()
-local origwin = vim.api.nvim_get_current_win()
-local origfile = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-local mistakesx = { }
-local mistakesy = { }
-local mistakes = 0
-local lettersTyped = 0
+  local startTime = os.time()
+  local buf = vim.api.nvim_get_current_buf()
+  local origwin = vim.api.nvim_get_current_win()
+  local origfile = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local mistakesx = { }
+  local mistakesy = { }
+  local mistakes = 0
+  local lettersTyped = 0
 
-local wpmbuf = vim.api.nvim_create_buf(false, true)
-local opts = {
-  relative = 'editor',
-  width = 15,
-  height = 2,
-  row = 1,
-  col = vim.o.columns - 3,
-  anchor = 'NE',
-  style = 'minimal',
-}
-local win = vim.api.nvim_open_win(wpmbuf, false, opts)
-vim.api.nvim_win_set_option(win, 'winblend', 0)
-vim.api.nvim_buf_set_lines(wpmbuf, 0, -1, false, {"WPM: 0"})
+  local wpmbuf = vim.api.nvim_create_buf(false, true)
+  local opts = {
+    relative = 'editor',
+    width = 15,
+    height = 2,
+    row = 1,
+    col = vim.o.columns - 3,
+    anchor = 'NE',
+    style = 'minimal',
+  }
+  local win = vim.api.nvim_open_win(wpmbuf, false, opts)
+  vim.api.nvim_win_set_option(win, 'winblend', 0)
+  vim.api.nvim_buf_set_lines(wpmbuf, 0, -1, false, {"WPM: 0"})
 
-vim.api.nvim_create_autocmd("TextChangedI", {
+  local autocmd = vim.api.nvim_create_autocmd("TextChangedI", {
     pattern = "*",
     callback = function()
       local endTime = os.time()
@@ -39,6 +40,8 @@ vim.api.nvim_create_autocmd("TextChangedI", {
       lettersTyped = #table.concat(current) - #table.concat(origfile) + lettersTyped
 
       if origString == currentString then
+        goto continue
+      elseif #origString > #currentString then
         goto continue
       else
         if cursorPos[2] > 0 then
@@ -63,8 +66,21 @@ vim.api.nvim_create_autocmd("TextChangedI", {
       for idx = 1, #mistakesx do
         vim.api.nvim_buf_add_highlight(buf, 0, 'Error', mistakesy[idx], mistakesx[idx] - 1, mistakesx[idx])
       end
-      
+
     end
-})
+  })
+
+  vim.defer_fn(function()
+    vim.api.nvim_del_autocmd(autocmd)
+    vim.api.nvim_command('stopinsert')
+    vim.api.nvim_win_close(win, true)
+    vim.api.nvim_buf_delete(wpmbuf, { force = true })
+    vim.defer_fn(function() print("Test Completed") 
+      vim.fn.system("sleep 2")
+      print("Your total WPM was " .. WPM .. ", with " .. mistakes .. " mistakes") 
+      vim.fn.system("sleep 2")
+    end, 1)
+  end, 60000)
+end
 
 return nvtt
