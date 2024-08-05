@@ -31,13 +31,21 @@ function nvtt:play()
   local autocmd = vim.api.nvim_create_autocmd("TextChangedI", {
     pattern = "*",
     callback = function()
-      local endTime = os.time()
+      endTime = os.time()
       local current = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
       local cursorPos = vim.api.nvim_win_get_cursor(origwin)
-      local origString = string.sub(origfile[cursorPos[1]], 1, cursorPos[2])
       local currentString = string.sub(current[cursorPos[1]], 1, cursorPos[2])
 
       lettersTyped = #table.concat(current) - #table.concat(origfile) + lettersTyped
+
+      if origfile[cursorPos[1]] then
+        origString = string.sub(origfile[cursorPos[1]], 1, cursorPos[2])
+      else
+        vim.cmd('normal! gg0')
+        mistakesy = {}
+        mistakesx = {}
+        goto continue
+      end
 
       if origString == currentString then
         goto continue
@@ -71,6 +79,7 @@ function nvtt:play()
   })
 
   vim.defer_fn(function()
+    WPM = math.floor(((lettersTyped - mistakes) / (endTime - startTime)) * 12)
     vim.api.nvim_del_autocmd(autocmd)
     vim.api.nvim_command('stopinsert')
     vim.api.nvim_win_close(win, true)
