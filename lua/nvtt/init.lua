@@ -46,10 +46,15 @@ function nvtt:play(time)
       if origfile[cursorPos[1]] then
         origString = string.sub(origfile[cursorPos[1]], 1, cursorPos[2])
       else
-        vim.cmd('normal! gg0')
-        mistakesy = {}
-        mistakesx = {}
-        goto continue
+        if time and time ~= '' then
+          vim.cmd('normal! gg0')
+          mistakesy = {}
+          mistakesx = {}
+          goto continue
+        else
+          endGame()
+          return
+        end
       end
 
       if origString == currentString then
@@ -83,20 +88,23 @@ function nvtt:play(time)
     end
   })
 
-  vim.defer_fn(endGame, timer)
+
+  if time and time ~= '' then
+    vim.defer_fn(endGame, timer)
+  end
 end
 
 function endGame()
   endTime = os.time()
   WPM = math.floor(((lettersTyped - mistakes) / (endTime - startTime)) * 12)
   vim.api.nvim_del_autocmd(autocmd)
-  vim.api.nvim_command('stopinsert')
   vim.api.nvim_win_close(win, true)
   vim.api.nvim_buf_delete(wpmbuf, { force = true })
   vim.api.nvim_buf_clear_namespace(0, 0, 0, -1)
   vim.defer_fn(function() print("Test Completed") 
     vim.fn.system("sleep 2")
     print("Your total WPM was " .. WPM .. ", with " .. mistakes .. " mistakes") 
+    vim.api.nvim_command('stopinsert')
     vim.fn.system("sleep 2")
   end, 1)
 end
