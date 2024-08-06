@@ -1,21 +1,26 @@
-local nvtt = {}
+nvtt = {}
 
-function nvtt:play()
-  vim.cmd('normal! gg0')
+function nvtt:play(time)
   vim.api.nvim_command('startinsert')
   vim.cmd('setlocal buftype=nofile') -- Set buffer type to nofile to avoid saving changes
 
-  local startTime = os.time()
-  local buf = vim.api.nvim_get_current_buf()
-  local origwin = vim.api.nvim_get_current_win()
-  local origfile = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local mistakesx = { }
-  local mistakesy = { }
-  local mistakes = 0
-  local lettersTyped = 0
+  if time and time ~= "" then
+    timer = time * 1000
+  else
+    timer = 60000
+  end
 
-  local wpmbuf = vim.api.nvim_create_buf(false, true)
-  local opts = {
+  startTime = os.time()
+  buf = vim.api.nvim_get_current_buf()
+  origwin = vim.api.nvim_get_current_win()
+  origfile = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  mistakesx = { }
+  mistakesy = { }
+  mistakes = 0
+  lettersTyped = 0
+
+  wpmbuf = vim.api.nvim_create_buf(false, true)
+  opts = {
     relative = 'editor',
     width = 15,
     height = 2,
@@ -24,17 +29,17 @@ function nvtt:play()
     anchor = 'NE',
     style = 'minimal',
   }
-  local win = vim.api.nvim_open_win(wpmbuf, false, opts)
+  win = vim.api.nvim_open_win(wpmbuf, false, opts)
   vim.api.nvim_win_set_option(win, 'winblend', 0)
   vim.api.nvim_buf_set_lines(wpmbuf, 0, -1, false, {"WPM: 0"})
 
-  local autocmd = vim.api.nvim_create_autocmd("TextChangedI", {
+  autocmd = vim.api.nvim_create_autocmd("TextChangedI", {
     pattern = "*",
     callback = function()
       endTime = os.time()
-      local current = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-      local cursorPos = vim.api.nvim_win_get_cursor(origwin)
-      local currentString = string.sub(current[cursorPos[1]], 1, cursorPos[2])
+      current = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      cursorPos = vim.api.nvim_win_get_cursor(origwin)
+      currentString = string.sub(current[cursorPos[1]], 1, cursorPos[2])
 
       lettersTyped = #table.concat(current) - #table.concat(origfile) + lettersTyped
 
@@ -78,18 +83,22 @@ function nvtt:play()
     end
   })
 
-  vim.defer_fn(function()
-    WPM = math.floor(((lettersTyped - mistakes) / (endTime - startTime)) * 12)
-    vim.api.nvim_del_autocmd(autocmd)
-    vim.api.nvim_command('stopinsert')
-    vim.api.nvim_win_close(win, true)
-    vim.api.nvim_buf_delete(wpmbuf, { force = true })
-    vim.defer_fn(function() print("Test Completed") 
-      vim.fn.system("sleep 2")
-      print("Your total WPM was " .. WPM .. ", with " .. mistakes .. " mistakes") 
-      vim.fn.system("sleep 2")
-    end, 1)
-  end, 60000)
+  vim.defer_fn(endGame, timer)
+end
+
+function endGame()
+  endTime = os.time()
+  WPM = math.floor(((lettersTyped - mistakes) / (endTime - startTime)) * 12)
+  vim.api.nvim_del_autocmd(autocmd)
+  vim.api.nvim_command('stopinsert')
+  vim.api.nvim_win_close(win, true)
+  vim.api.nvim_buf_delete(wpmbuf, { force = true })
+  vim.api.nvim_buf_clear_namespace(0, 0, 0, -1)
+  vim.defer_fn(function() print("Test Completed") 
+    vim.fn.system("sleep 2")
+    print("Your total WPM was " .. WPM .. ", with " .. mistakes .. " mistakes") 
+    vim.fn.system("sleep 2")
+  end, 1)
 end
 
 return nvtt
