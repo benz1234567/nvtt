@@ -104,8 +104,8 @@ function endGame()
   vim.defer_fn(function() print("Test Completed") 
     vim.fn.system("sleep 2")
     print("Your total WPM was " .. WPM .. ", with " .. mistakes .. " mistakes") 
-    vim.api.nvim_command('stopinsert')
     vim.fn.system("sleep 2")
+    vim.api.nvim_command('stopinsert')
   end, 1)
 end
 
