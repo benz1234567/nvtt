@@ -8,4 +8,6 @@ Sets buftype=nofile, so don't worry, it won't change the file at all
 
 Test ends when you get the end of the file, but you can specify amount of seconds as an argument (:NVTT 60 for one minute), and it will take you back to the top if you get to the end of the file before the timer finishes
 
+Removes all auto indentation
+
 Type :NVTT to start

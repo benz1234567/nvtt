@@ -1,7 +1,16 @@
 nvtt = {}
 
 function nvtt:play(time)
+  vim.opt.autoindent = false
+  vim.opt.smartindent = false
+  vim.opt_local.formatoptions:remove("r")
+  vim.opt.cindent = false
+  vim.opt.copyindent = false
+  vim.opt.preserveindent = false
+  vim.opt.indentexpr = ""
+  vim.opt.modeline = false
   vim.api.nvim_command('startinsert')
+  vim.bo.expandtab = false
   vim.cmd('setlocal buftype=nofile') -- Set buffer type to nofile to avoid saving changes
 
   if time and time ~= "" then
